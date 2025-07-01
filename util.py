@@ -22,6 +22,7 @@ import pygetwindow as gw
 # macOS specific import
 if platform.system() == 'Darwin':
     import Quartz
+    import AppKit
 else:
     import win32gui
     import win32con
@@ -682,18 +683,44 @@ def mask_route_colors(img_map, img_route, color_code):
 
 def activate_game_window(window_title):
     '''
-    activate_game_window
-    This function only support Windows OS
+    Switch to the application and bring it to the foreground.
     '''
-    hwnd = win32gui.FindWindow(None, window_title)
-    if hwnd == 0:
-        raise Exception(f"Cannot find window with title: {window_title}")
+    if is_mac():
+        hwnd = win32gui.FindWindow(None, window_title)
+        if hwnd == 0:
+            raise Exception(f"Cannot find window with title: {window_title}")
 
-    # Restore if minimized
-    win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-    # Bring to foreground
-    win32gui.SetForegroundWindow(hwnd)
+        # Restore if minimized
+        win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+        # Bring to foreground
+        win32gui.SetForegroundWindow(hwnd)
+    else:
+        options = Quartz.kCGWindowListOptionOnScreenOnly | Quartz.kCGWindowListExcludeDesktopElements
+        window_list = Quartz.CGWindowListCopyWindowInfo(options, Quartz.kCGNullWindowID)
 
+        found = False
+        for window in window_list:
+            owner_name = window.get('kCGWindowOwnerName', '')
+            window_name = window.get('kCGWindowName', '')
+            pid = window.get('kCGWindowOwnerPID', None)
+            logger.debug(f"Found window '{window_name}' from app '{owner_name}' (pid={pid})")
+
+            if window_title.lower() in owner_name.lower():
+                found = True
+
+                # Get NSRunningApplication from pid
+                app = AppKit.NSRunningApplication.runningApplicationWithProcessIdentifier_(pid)
+                if app:
+                    # 將應用程式切到前景
+                    app.activateWithOptions_(AppKit.NSApplicationActivateIgnoringOtherApps)
+                    logger.debug(f"Brought '{owner_name}' to foreground.")
+                    return
+                else:
+                    raise Exception(f"App with pid={pid} not found.")
+
+        if not found:
+            raise Exception(f"Cannot find window with title containing: {window_title}")
+        
 def is_img_16_to_9(img, cfg):
     """
     Check if image aspect ratio is approximately 16:9.
