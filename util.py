@@ -686,15 +686,6 @@ def activate_game_window(window_title):
     Switch to the application and bring it to the foreground.
     '''
     if is_mac():
-        hwnd = win32gui.FindWindow(None, window_title)
-        if hwnd == 0:
-            raise Exception(f"Cannot find window with title: {window_title}")
-
-        # Restore if minimized
-        win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-        # Bring to foreground
-        win32gui.SetForegroundWindow(hwnd)
-    else:
         options = Quartz.kCGWindowListOptionOnScreenOnly | Quartz.kCGWindowListExcludeDesktopElements
         window_list = Quartz.CGWindowListCopyWindowInfo(options, Quartz.kCGNullWindowID)
 
@@ -720,6 +711,15 @@ def activate_game_window(window_title):
 
         if not found:
             raise Exception(f"Cannot find window with title containing: {window_title}")
+    else:
+        hwnd = win32gui.FindWindow(None, window_title)
+        if hwnd == 0:
+            raise Exception(f"Cannot find window with title: {window_title}")
+
+        # Restore if minimized
+        win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+        # Bring to foreground
+        win32gui.SetForegroundWindow(hwnd)
         
 def is_img_16_to_9(img, cfg):
     """
