@@ -918,9 +918,9 @@ class MapleStoryBot:
                     (0, 0, 255), str(round(best_score, 2))
                 )
                 # Update debug window
+                if self.is_show_debug_window:
                 self.update_img_frame_debug()
                 cv2.waitKey(1)
-
                 # For logging
                 screenshot(self.img_frame_debug, "solve_rune")
 
